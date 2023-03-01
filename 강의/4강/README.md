@@ -1081,6 +1081,186 @@ MessageDecorator - 꾸미기 적용 전 = [data], 적용 후 = [=== data ===]
 
 ## 인터페이스 기반 프록시 - 적용
 
+### 기존의 V1 의존 관계
+
+![img_13.png](img_13.png)
+
+### 프록시 추가 후 의존 관계
+
+![img_14.png](img_14.png)
+
+![img_15.png](img_15.png)
+
+### 예제
+
+#### OrderRepositoryInterfaceProxy
+
+```java
+/**
+ * {@link OrderRepositoryV1} Proxy
+ */
+@RequiredArgsConstructor
+public class OrderRepositoryInterfaceProxy implements OrderRepositoryV1 {
+
+    private final OrderRepositoryV1 target;
+    private final LogTrace logTrace;
+
+    @Override
+    public void save(String itemId) {
+        TraceStatus status = null;
+
+        try {
+            status = logTrace.begin("OrderRepository.save()");
+
+            target.save(itemId);
+
+            logTrace.end(status);
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### OrderServiceInterfaceProxy
+
+```java
+/**
+ * {@link OrderServiceV1} Proxy
+ */
+@RequiredArgsConstructor
+public class OrderServiceInterfaceProxy implements OrderServiceV1 {
+
+    private final OrderServiceV1 target;
+    private final LogTrace logTrace;
+
+    @Override
+    public void orderItem(String itemId) {
+        TraceStatus status = null;
+
+        try {
+            status = logTrace.begin("OrderService.save()");
+
+            target.orderItem(itemId);
+
+            logTrace.end(status);
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### OrderControllerInterfaceProxy
+
+```java
+/**
+ * {@link OrderControllerV1} Proxy
+ */
+@RequiredArgsConstructor
+public class OrderControllerInterfaceProxy implements OrderControllerV1 {
+
+    private final OrderControllerV1 target;
+    private final LogTrace logTrace;
+
+    @Override
+    public String request(String itemId) {
+        TraceStatus status = null;
+
+        try {
+            status = logTrace.begin("OrderController.save()");
+
+            String result = target.request(itemId);
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public String noLog() {
+        return target.noLog();
+    }
+}
+```
+
+#### InterfaceProxyConfig
+
+```java
+/**
+ * V1 Proxy Configuration
+ */
+@Configuration
+public class InterfaceProxyConfig {
+
+    /**
+     * @return {@link OrderControllerInterfaceProxy}
+     */
+    @Bean
+    public OrderControllerV1 orderController(LogTrace logTrace) {
+        OrderControllerV1Impl controllerImpl = new OrderControllerV1Impl(orderService(logTrace));
+        return new OrderControllerInterfaceProxy(controllerImpl, logTrace);
+    }
+
+    /**
+     * @return {@link OrderServiceInterfaceProxy}
+     */
+    @Bean
+    public OrderServiceV1 orderService(LogTrace logTrace) {
+        OrderServiceV1Impl serviceImpl = new OrderServiceV1Impl(orderRepository(logTrace));
+        return new OrderServiceInterfaceProxy(serviceImpl, logTrace);
+    }
+
+    /**
+     * @return {@link OrderRepositoryInterfaceProxy}
+     */
+    @Bean
+    public OrderRepositoryV1 orderRepository(LogTrace logTrace) {
+        OrderRepositoryV1Impl repositoryImpl = new OrderRepositoryV1Impl();
+        return new OrderRepositoryInterfaceProxy(repositoryImpl, logTrace);
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import(InterfaceProxyConfig.class)
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ProxyApplication.class, args);
+    }
+
+    @Bean
+    public LogTrace logTrace() {
+        return new ThreadLocalLogTrace();
+    }
+}
+```
+
+### 정리
+
+#### 프록시 적용 전
+
+![img_16.png](img_16.png)
+
+#### 프록시 적용 후
+
+![img_17.png](img_17.png)
+
+* 스프링 컨테이너에 프록시 객체가 등록된다.
+    * 스프링 컨테이너는 이제 실제 객체가 아니라 프록시 객체를 스프링 빈으로 관리한다.
+* 이제 실제 객체는 스프링 컨테이너와는 상관이 없다. 실제 객체는 프록시 객체를 통해서 참조될 뿐이다.
+* 프록시 객체는 스프링 컨테이너가 관리하고 자바 힙 메모리에도 올라간다.
+    * 반면에 실제 객체는 자바 힙 메모리에는 올라가지만 스프링 컨테이너가 관리하지는 않는다.
+
 ## 구체 클래스 기반 프록시 - 예제 1
 
 ## 구체 클래스 기반 프록시 - 예제 2
