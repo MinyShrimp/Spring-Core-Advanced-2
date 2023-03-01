@@ -668,7 +668,7 @@ public class RealSubject implements Subject {
 }
 ```
 
-#### ProxyPatternClient
+#### Client
 
 ```java
 /**
@@ -676,7 +676,7 @@ public class RealSubject implements Subject {
  * - 의존: {@link Subject}
  */
 @RequiredArgsConstructor
-public class ProxyPatternClient {
+public class Client {
     private final Subject subject;
 
     /**
@@ -692,7 +692,7 @@ public class ProxyPatternClient {
 
 ```java
 /**
- * {@link Subject}, {@link RealSubject}, {@link ProxyPatternClient} Test
+ * {@link Subject}, {@link RealSubject}, {@link Client} Test
  */
 public class ProxyPatternTest {
 
@@ -704,7 +704,7 @@ public class ProxyPatternTest {
     @Test
     void noProxyTest() {
         Subject realSubject = new RealSubject();
-        ProxyPatternClient client = new ProxyPatternClient(realSubject);
+        Client client = new Client(realSubject);
 
         client.execute();
         client.execute();
@@ -772,7 +772,7 @@ public class CacheProxy implements Subject {
 
 ```java
 /**
- * {@link ProxyPatternClient}가 3번 호출되지만,
+ * {@link Client}가 3번 호출되지만,
  * {@link RealSubject}가 아닌 {@link CacheProxy}가 대신 호출됨.
  * <p>
  * {@link CacheProxy}는 최초 한 번 {@link RealSubject}을 호출하고,
@@ -784,7 +784,7 @@ public class CacheProxy implements Subject {
 void cacheProxyTest() {
     RealSubject realSubject = new RealSubject();
     CacheProxy cacheProxy = new CacheProxy(realSubject);
-    ProxyPatternClient client = new ProxyPatternClient(cacheProxy);
+    Client client = new Client(cacheProxy);
 
     client.execute();
     client.execute();

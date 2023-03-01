@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
  * {@link Subject}를 의존하는 Client
  */
 @RequiredArgsConstructor
-public class ProxyPatternClient {
+public class Client {
     private final Subject subject;
 
     /**
