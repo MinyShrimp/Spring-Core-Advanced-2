@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * v1<br>
+ * 인터페이스와 구현 클래스 - 스프링 빈으로 수동 등록<br><br>
+ * <p>
  * OrderController 인터페이스<br>
  * - {@link OrderControllerV1Impl}<br>
  * - {@link Controller}, {@link RestController}가 없으면 인식 못함

@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * v1<br>
+ * 인터페이스와 구현 클래스 - 스프링 빈으로 수동 등록<br><br>
+ * <p>
  * {@link OrderControllerV1} 구현체<br>
  * - 의존: {@link OrderServiceV1}
  */

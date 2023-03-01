@@ -3,6 +3,9 @@ package hello.springcoreadvanced2.app.v1;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * v1<br>
+ * 인터페이스와 구현 클래스 - 스프링 빈으로 수동 등록<br><br>
+ * <p>
  * {@link OrderRepositoryV1} 구현체
  */
 @Slf4j
