@@ -17,23 +17,23 @@ public class AppV1Config {
      * @return {@link OrderControllerV1Impl}
      */
     @Bean
-    public OrderControllerV1 orderController() {
-        return new OrderControllerV1Impl(orderService());
+    public OrderControllerV1 orderControllerV1() {
+        return new OrderControllerV1Impl(orderServiceV1());
     }
 
     /**
      * @return {@link OrderServiceV1Impl}
      */
     @Bean
-    public OrderServiceV1 orderService() {
-        return new OrderServiceV1Impl(orderRepository());
+    public OrderServiceV1 orderServiceV1() {
+        return new OrderServiceV1Impl(orderRepositoryV1());
     }
 
     /**
      * @return {@link OrderRepositoryV1Impl}
      */
     @Bean
-    public OrderRepositoryV1 orderRepository() {
+    public OrderRepositoryV1 orderRepositoryV1() {
         return new OrderRepositoryV1Impl();
     }
 }

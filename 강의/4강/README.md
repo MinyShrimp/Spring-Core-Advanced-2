@@ -410,6 +410,112 @@ public class ProxyApplication { ... }
 
 ## 예제 프로젝트 만들기 V3
 
+### v3 - 컴포넌트 스캔으로 스프링 빈 자동 등록
+
+#### OrderRepository V3
+
+```java
+/**
+ * v3<br>
+ * 컴포넌트 스캔으로 스프링 빈 자동 등록<br><br>
+ * 주문 저장소
+ */
+@Slf4j
+@Repository
+public class OrderRepositoryV3 {
+
+    /**
+     * 주문 저장 로직
+     *
+     * @param itemId 상품 ID
+     * @throws IllegalStateException itemId.equals("ex")
+     */
+    public void save(String itemId) {
+        if (itemId.equals("ex")) {
+            throw new IllegalStateException("예외 발생!");
+        }
+        sleep(1000);
+    }
+
+    /**
+     * {@link Thread#sleep}, {@link InterruptedException} Wrapper
+     *
+     * @param millis 중지할 시간
+     */
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            log.info("", e);
+        }
+    }
+}
+```
+
+#### OrderService V3
+
+```java
+/**
+ * v3<br>
+ * 컴포넌트 스캔으로 스프링 빈 자동 등록<br><br>
+ * 주문 서비스
+ */
+@Service
+@RequiredArgsConstructor
+public class OrderServiceV3 {
+    private final OrderRepositoryV3 orderRepository;
+
+    /**
+     * 주문 저장 비즈니스 로직
+     *
+     * @param itemId 상품 ID
+     * @throws IllegalStateException itemId.equals("ex")
+     */
+    public void orderItem(String itemId) {
+        orderRepository.save(itemId);
+    }
+}
+```
+
+#### OrderController V3
+
+```java
+/**
+ * v3<br>
+ * 컴포넌트 스캔으로 스프링 빈 자동 등록<br><br>
+ * 주문 컨트롤러
+ */
+@RestController
+@RequestMapping("/v3")
+@RequiredArgsConstructor
+public class OrderControllerV3 {
+    private final OrderServiceV3 orderService;
+
+    /**
+     * GET /v3/request
+     *
+     * @param itemId 상품 ID
+     * @return ECHO 상품 ID
+     * @throws IllegalStateException itemId.equals("ex")
+     */
+    @GetMapping("/request")
+    public String request(String itemId) {
+        orderService.orderItem(itemId);
+        return itemId;
+    }
+
+    /**
+     * GET /v3/no-log
+     *
+     * @return "noLog ok"
+     */
+    @GetMapping("no-log")
+    public String noLog() {
+        return "noLog ok";
+    }
+}
+```
+
 ## 요구사항 추가
 
 ## 프록시, 프록시 패턴, 데코레이터 패턴 - 소개
