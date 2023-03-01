@@ -2,6 +2,35 @@
 
 ## 프로젝트 생성
 
+### Spring initializer
+
+* https://start.spring.io/
+* 프로젝트 선택
+    * Project: Gradle - Groovy
+    * Language: Java 17
+    * Spring Boot: 3.0.3
+* Project Metadata
+    * Group: hello
+    * Artifact: spring-core-advanced-2
+    * Packaging: Jar
+* Dependencies
+    * Spring Web, Lombok
+
+### build.gradle
+
+```gradle
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // 테스트에서 lombok 사용
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+```
+
 ## 예제 프로젝트 만들기 V1
 
 ## 예제 프로젝트 만들기 V2
