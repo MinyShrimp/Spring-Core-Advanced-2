@@ -566,7 +566,7 @@ public class OrderControllerV3 {
 
 여기서 대신 장을 보는 **대리자**를 영어로 **프록시**(`Proxy`)라 한다.
 
-#### 예시
+#### 기능
 
 * 접근 제어, 캐싱
 * 부가 기능 추가
@@ -623,6 +623,95 @@ public class OrderControllerV3 {
 > 객체안에서 객체로 구현되어있는가, 웹 서버로 구현되어 있는가 처럼 규모의 차이가 있을 뿐 근본적인 역할은 같다.
 
 ## 프록시 패턴 - 예제 코드 1
+
+### 예제
+
+#### 그림
+
+![img_6.png](img_6.png)
+
+#### Subject
+
+```java
+/**
+ * 프록시 객체<br>
+ * - 구현체: {@link RealSubject}
+ */
+public interface Subject {
+
+    /**
+     * 실제로 실행되는 메서드
+     */
+    String operation();
+}
+```
+
+#### RealSubject
+
+```java
+/**
+ * 프록시 객체 {@link Subject}의 구현체
+ */
+@Slf4j
+public class RealSubject implements Subject {
+
+    /**
+     * 실제 객체 호출<br>
+     * - <code>Thread.sleep(1000)</code>
+     */
+    @Override
+    public String operation() {
+        log.info("실제 객체 호출");
+        SleepWrapper.sleep(1000);
+        return "data";
+    }
+}
+```
+
+#### ProxyPatternClient
+
+```java
+/**
+ * 프록시를 호출하는 Client<br>
+ * - 의존: {@link Subject}
+ */
+@RequiredArgsConstructor
+public class ProxyPatternClient {
+    private final Subject subject;
+
+    /**
+     * 프록시 호출
+     */
+    public void execute() {
+        subject.operation();
+    }
+}
+```
+
+#### ProxyPattern Test
+
+```java
+/**
+ * {@link Subject}, {@link RealSubject}, {@link ProxyPatternClient} Test
+ */
+public class ProxyPatternTest {
+
+    /**
+     * 프록시 클라이언트를 단순히 3번 호출한다.
+     * <p>
+     * RealSubject는 호출당 1초씩 걸리기 때문에 총 소요시간은 3초가 된다.
+     */
+    @Test
+    void noProxyTest() {
+        Subject realSubject = new RealSubject();
+        ProxyPatternClient client = new ProxyPatternClient(realSubject);
+
+        client.execute();
+        client.execute();
+        client.execute();
+    }
+}
+```
 
 ## 프록시 패턴 - 예제 코드 2
 
