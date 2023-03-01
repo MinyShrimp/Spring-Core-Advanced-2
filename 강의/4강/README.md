@@ -1386,4 +1386,193 @@ TimeProxy - TimeDecorator 종료 resultTime = [0ms]
 
 ## 구체 클래스 기반 프록시 - 적용
 
+### V2 구체 클래스 적용
+
+#### OrderRepositoryConcreteProxy
+
+```java
+/**
+ * {@link OrderRepositoryV2}를 상속받은 Proxy 객체
+ */
+@RequiredArgsConstructor
+public class OrderRepositoryConcreteProxy extends OrderRepositoryV2 {
+    private final OrderRepositoryV2 target;
+    private final LogTrace logTrace;
+
+    @Override
+    public void save(String itemId) {
+        TraceStatus status = null;
+
+        try {
+            status = logTrace.begin("OrderRepository.save()");
+
+            target.save(itemId);
+
+            logTrace.end(status);
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### OrderServiceConcreteProxy
+
+```java
+/**
+ * {@link OrderServiceV2}를 상속받은 Proxy 객체
+ */
+public class OrderServiceConcreteProxy extends OrderServiceV2 {
+    private final OrderServiceV2 target;
+    private final LogTrace logTrace;
+
+    public OrderServiceConcreteProxy(OrderServiceV2 target, LogTrace logTrace) {
+        super(null);
+        this.target = target;
+        this.logTrace = logTrace;
+    }
+
+    @Override
+    public void orderItem(String itemId) {
+        TraceStatus status = null;
+
+        try {
+            status = logTrace.begin("OrderService.orderItem()");
+
+            target.orderItem(itemId);
+
+            logTrace.end(status);
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### OrderControllerConcreteProxy
+
+```java
+/**
+ * {@link OrderControllerV2}를 상속받은 Proxy 객체
+ */
+public class OrderControllerConcreteProxy extends OrderControllerV2 {
+    private final OrderControllerV2 target;
+    private final LogTrace logTrace;
+
+    public OrderControllerConcreteProxy(OrderControllerV2 target, LogTrace logTrace) {
+        super(null);
+        this.target = target;
+        this.logTrace = logTrace;
+    }
+
+    @Override
+    public String request(String itemId) {
+        TraceStatus status = null;
+
+        try {
+            status = logTrace.begin("OrderController.request()");
+
+            String result = target.request(itemId);
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+### 설정
+
+#### ConcreteProxyConfig
+
+```java
+/**
+ * V2 구체 클래스 Proxy 설정
+ */
+@Configuration
+public class ConcreteProxyConfig {
+
+    /**
+     * @return {@link OrderControllerConcreteProxy}
+     */
+    @Bean
+    public OrderControllerV2 orderControllerV2(LogTrace logTrace) {
+        return new OrderControllerConcreteProxy(
+                new OrderControllerV2(orderServiceV2(logTrace)),
+                logTrace
+        );
+    }
+
+    /**
+     * @return {@link OrderServiceConcreteProxy}
+     */
+    @Bean
+    public OrderServiceV2 orderServiceV2(LogTrace logTrace) {
+        return new OrderServiceConcreteProxy(
+                new OrderServiceV2(orderRepositoryV2(logTrace)),
+                logTrace
+        );
+    }
+
+    /**
+     * @return {@link OrderRepositoryConcreteProxy}
+     */
+    @Bean
+    public OrderRepositoryV2 orderRepositoryV2(LogTrace logTrace) {
+        return new OrderRepositoryConcreteProxy(
+                new OrderRepositoryV2(), logTrace
+        );
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({InterfaceProxyConfig.class, ConcreteProxyConfig.class})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ProxyApplication.class, args);
+    }
+
+    @Bean
+    public LogTrace logTrace() {
+        return new ThreadLocalLogTrace();
+    }
+}
+```
+
+### 실행
+
+* http://localhost:8080/v2/request?itemId=hello
+* http://localhost:8080/v2/no-log
+
+```
+ThreadLocalLogTrace   : [39817e87] OrderController.request()
+ThreadLocalLogTrace   : [39817e87] |-->OrderService.orderItem()
+ThreadLocalLogTrace   : [39817e87] |   |-->OrderRepository.save()
+ThreadLocalLogTrace   : [39817e87] |   |<--OrderRepository.save() time = [1005ms]
+ThreadLocalLogTrace   : [39817e87] |<--OrderService.orderItem() time = [1007ms]
+ThreadLocalLogTrace   : [39817e87] OrderController.request() time = [1008ms]
+```
+
+### 정리
+
+#### 클래스 기반 프록시의 단점
+
+* `OrderServiceV2.super(null)`
+* 자바 기본 문법에 의해 자식 클래스를 생성할 때는 항상 `super()`로 부모 클래스의 생성자를 호출해야 한다.
+    * 이 부분을 생략하면 기본 생성자가 호출된다.
+    * 그런데 부모 클래스인 `OrderServiceV2`는 기본 생성자가 없고, 생성자에서 파라미터 1개를 필수로 받는다.
+    * 따라서 파라미터를 넣어서 `super(..)`를 호출해야 한다.
+* 프록시는 부모 객체의 기능을 사용하지 않기 때문에 `super(null)`을 입력해도 된다.
+* 인터페이스 기반 프록시는 이런 고민을 하지 않아도 된다.
+
 ## 인터페이스 기반 프록시와 클래스 기반 프록시
