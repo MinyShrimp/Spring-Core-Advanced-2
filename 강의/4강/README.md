@@ -217,7 +217,10 @@ public class OrderControllerV1Impl implements OrderControllerV1 {
 
 ```java
 /**
- * 수동 빈 등록
+ * v1<br>
+ * 인터페이스와 구현 클래스 - 스프링 빈으로 수동 등록<br><br>
+ * <p>
+ * 스프링 빈 수동 등록 설정
  */
 @Configuration
 public class AppV1Config {
@@ -226,23 +229,23 @@ public class AppV1Config {
      * @return {@link OrderControllerV1Impl}
      */
     @Bean
-    public OrderControllerV1 orderController() {
-        return new OrderControllerV1Impl(orderService());
+    public OrderControllerV1 orderControllerV1() {
+        return new OrderControllerV1Impl(orderServiceV1());
     }
 
     /**
      * @return {@link OrderServiceV1Impl}
      */
     @Bean
-    public OrderServiceV1 orderService() {
-        return new OrderServiceV1Impl(orderRepository());
+    public OrderServiceV1 orderServiceV1() {
+        return new OrderServiceV1Impl(orderRepositoryV1());
     }
 
     /**
      * @return {@link OrderRepositoryV1Impl}
      */
     @Bean
-    public OrderRepositoryV1 orderRepository() {
+    public OrderRepositoryV1 orderRepositoryV1() {
         return new OrderRepositoryV1Impl();
     }
 }
@@ -381,17 +384,17 @@ public class OrderControllerV2 {
 public class AppV2Config {
 
     @Bean
-    public OrderControllerV2 orderController() {
-        return new OrderControllerV2(orderService());
+    public OrderControllerV2 orderControllerV2() {
+        return new OrderControllerV2(orderServiceV2());
     }
 
     @Bean
-    public OrderServiceV2 orderService() {
-        return new OrderServiceV2(orderRepository());
+    public OrderServiceV2 orderServiceV2() {
+        return new OrderServiceV2(orderRepositoryV2());
     }
 
     @Bean
-    public OrderRepositoryV2 orderRepository() {
+    public OrderRepositoryV2 orderRepositoryV2() {
         return new OrderRepositoryV2();
     }
 }
