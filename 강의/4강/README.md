@@ -1323,6 +1323,67 @@ public class ConcreteProxyTest {
 
 ## 구체 클래스 기반 프록시 - 예제 2
 
+### 클래스 기반 프록시 도입
+
+![img_19.png](img_19.png)
+
+자바의 다형성은 인터페이스를 구현하든, 아니면 클래스를 상속하든 상위 타입만 맞으면 다형성이 적용된다.
+쉽게 이야기해서 인터페이스가 없어도 프록시를 만들수 있다는 뜻이다.
+
+그래서 이번에는 인터페이스가 아니라 클래스를 기반으로 상속을 받아서 프록시를 만들어보겠다.
+
+### 예제
+
+#### TimeProxy
+
+```java
+/**
+ * {@link ConcreteLogic}을 상속받은 Proxy 객체
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class TimeProxy extends ConcreteLogic {
+    private final ConcreteLogic target;
+
+    @Override
+    public String operation() {
+        log.info("TimeDecorator 실행");
+        long startTime = System.currentTimeMillis();
+
+        String result = target.operation();
+
+        long endTime = System.currentTimeMillis();
+        long resultTime = endTime - startTime;
+        log.info("TimeDecorator 종료 resultTime = [{}ms]", resultTime);
+        return result;
+    }
+}
+```
+
+#### ConcreteProxyTest
+
+```java
+/**
+ * 구체 클래스를 상속받은 프록시를 전달
+ */
+@Test
+void addProxy() {
+    ConcreteLogic logic = new ConcreteLogic();
+    TimeProxy proxy = new TimeProxy(logic);
+    ConcreteClient client = new ConcreteClient(proxy);
+
+    client.execute();
+}
+```
+
+#### 결과 로그
+
+```
+TimeProxy - TimeDecorator 실행
+ConcreteLogic - ConcreteLogic 실행
+TimeProxy - TimeDecorator 종료 resultTime = [0ms]
+```
+
 ## 구체 클래스 기반 프록시 - 적용
 
 ## 인터페이스 기반 프록시와 클래스 기반 프록시
