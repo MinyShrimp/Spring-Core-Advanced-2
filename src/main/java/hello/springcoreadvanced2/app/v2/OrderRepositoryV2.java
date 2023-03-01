@@ -1,5 +1,6 @@
 package hello.springcoreadvanced2.app.v2;
 
+import hello.springcoreadvanced2.wrapper.SleepWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,19 +21,6 @@ public class OrderRepositoryV2 {
         if (itemId.equals("ex")) {
             throw new IllegalStateException("예외 발생!");
         }
-        sleep(1000);
-    }
-
-    /**
-     * {@link Thread#sleep}, {@link InterruptedException} Wrapper
-     *
-     * @param millis 중지할 시간
-     */
-    private void sleep(int millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            log.info("", e);
-        }
+        SleepWrapper.sleep(1000);
     }
 }
