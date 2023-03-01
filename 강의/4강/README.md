@@ -867,7 +867,7 @@ public class Client {
      */
     public void execute() {
         String result = component.operation();
-        log.info("result = {}", result);
+        log.info("result = [{}]", result);
     }
 }
 ```
@@ -884,7 +884,7 @@ public class DecoratorPatternTest {
     /**
      * 일반적인 호출
      * <p>
-     * 결과로 {@link RealComponent#operation()} 가 호출된다.
+     * 결과로 {@link RealComponent#operation()}이 호출된다.
      */
     @Test
     void noDecorator() {
@@ -897,6 +897,78 @@ public class DecoratorPatternTest {
 ```
 
 ## 데코레이터 패턴 - 예제 코드 2
+
+### 데코레이터 패턴의 기능
+
+#### 부가 기능 추가
+
+* 데코레이터 패턴: 원래 서버가 제공하는 기능에 더해서 부가 기능을 수행한다.
+    * 요청 값이나, 응답 값을 중간에 변형한다. (Converter, Formatter)
+    * 실행 시간을 측정해서 추가 로그를 남긴다. (Log)
+
+### 응답 값을 꾸며주는 데코레이터
+
+![img_10.png](img_10.png)
+
+#### MessageDecorator
+
+```java
+/**
+ * {@link Component}를 상속받는 메시지 데코레이터
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class MessageDecorator implements Component {
+
+    /**
+     * 목표 {@link Component} 구현체
+     */
+    private final Component target;
+
+    /**
+     * 메시지 데코레이터 실행
+     *
+     * @return "=== " + {@link #target}.operation() + " ===";
+     */
+    @Override
+    public String operation() {
+        log.info("MessageDecorator 실행");
+
+        String result = target.operation();
+        String decoResult = "=== " + result + " ===";
+        log.info("꾸미기 적용 전 = [{}], 적용 후 = [{}]", result, decoResult);
+
+        return decoResult;
+    }
+}
+```
+
+#### DecoratorPatternTest
+
+```java
+/**
+ * 메시지 데코레이터 호출
+ * <p>
+ * 결과로 {@link MessageDecorator#operation()}이 호출된다.
+ */
+@Test
+void decorator1() {
+    Component realComponent = new RealComponent();
+    Component decorator = new MessageDecorator(realComponent);
+    Client client = new Client(decorator);
+
+    client.execute();
+}
+```
+
+#### 결과 로그
+
+```
+MessageDecorator - MessageDecorator 실행
+   RealComponent - RealComponent 실행
+MessageDecorator - 꾸미기 적용 전 = [data], 적용 후 = [=== data ===]
+          Client - result = [=== data ===]
+```
 
 ## 데코레이터 패턴 - 예제 코드 3
 

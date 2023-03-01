@@ -18,6 +18,6 @@ public class Client {
      */
     public void execute() {
         String result = component.operation();
-        log.info("result = {}", result);
+        log.info("result = [{}]", result);
     }
 }

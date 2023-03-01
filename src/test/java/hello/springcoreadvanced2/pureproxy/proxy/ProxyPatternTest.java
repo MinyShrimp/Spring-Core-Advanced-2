@@ -7,7 +7,7 @@ import hello.springcoreadvanced2.pureproxy.proxy.code.Subject;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link Subject}, {@link Client} Test
+ * {@link Subject}, {@link RealSubject}, {@link CacheProxy}, {@link Client} Test
  */
 public class ProxyPatternTest {
 
