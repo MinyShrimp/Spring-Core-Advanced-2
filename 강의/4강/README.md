@@ -1263,6 +1263,64 @@ public class ProxyApplication {
 
 ## 구체 클래스 기반 프록시 - 예제 1
 
+### 구체 클래스 프록시 적용 전
+
+![img_18.png](img_18.png)
+
+#### ConcreteLogic
+
+```java
+/**
+ * 구체 로직 클래스 <br>
+ * {@link ConcreteClient}이 의존하고 있다.
+ */
+@Slf4j
+public class ConcreteLogic {
+    public String operation() {
+        log.info("ConcreteLogic 실행");
+        return "data";
+    }
+}
+```
+
+#### ConcreteClient
+
+```java
+/**
+ * 구체 클라이언트 클래스<br>
+ * {@link ConcreteLogic} 의존
+ */
+@RequiredArgsConstructor
+public class ConcreteClient {
+    private final ConcreteLogic concreteLogic;
+
+    public void execute() {
+        concreteLogic.operation();
+    }
+}
+```
+
+#### ConcreteProxyTest
+
+```java
+/**
+ * {@link ConcreteLogic} {@link ConcreteClient} Test
+ */
+public class ConcreteProxyTest {
+
+    /**
+     * 프록시가 적용되지 않은 평범한 방법
+     */
+    @Test
+    void noProxy() {
+        ConcreteLogic logic = new ConcreteLogic();
+        ConcreteClient client = new ConcreteClient(logic);
+
+        client.execute();
+    }
+}
+```
+
 ## 구체 클래스 기반 프록시 - 예제 2
 
 ## 구체 클래스 기반 프록시 - 적용
