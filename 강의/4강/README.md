@@ -805,6 +805,97 @@ void cacheProxyTest() {
 
 ## 데코레이터 패턴 - 예제 코드 1
 
+### 적용 전 예제
+
+#### 그림
+
+![img_9.png](img_9.png)
+
+#### Component
+
+```java
+/**
+ * Component 인터페이스<br>
+ * - 구현체: {@link RealComponent}
+ */
+public interface Component {
+
+    /**
+     * 실행을 원하는 메서드
+     */
+    String operation();
+}
+```
+
+#### RealComponent
+
+```java
+/**
+ * 실제 {@link Component} 구현체
+ */
+@Slf4j
+public class RealComponent implements Component {
+
+    /**
+     * 실제로 실행되는 메서드
+     *
+     * @return "data"
+     */
+    @Override
+    public String operation() {
+        log.info("RealComponent 실행");
+        return "data";
+    }
+}
+```
+
+#### Client
+
+```java
+/**
+ * {@link Component}를 사용하는 Client
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class Client {
+    private final Component component;
+
+    /**
+     * Client 실행
+     * <p>
+     * {@link Component#operation()}의 반환값을 받아서 화면에 출력한다.
+     */
+    public void execute() {
+        String result = component.operation();
+        log.info("result = {}", result);
+    }
+}
+```
+
+#### DecoratorPatternTest
+
+```java
+/**
+ * {@link Component}, {@link RealComponent}, {@link Client} Test
+ */
+@Slf4j
+public class DecoratorPatternTest {
+
+    /**
+     * 일반적인 호출
+     * <p>
+     * 결과로 {@link RealComponent#operation()} 가 호출된다.
+     */
+    @Test
+    void noDecorator() {
+        Component realComponent = new RealComponent();
+        Client client = new Client(realComponent);
+
+        client.execute();
+    }
+}
+```
+
 ## 데코레이터 패턴 - 예제 코드 2
 
 ## 데코레이터 패턴 - 예제 코드 3

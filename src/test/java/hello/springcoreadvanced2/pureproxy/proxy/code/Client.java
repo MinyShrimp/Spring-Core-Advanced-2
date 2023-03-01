@@ -3,7 +3,7 @@ package hello.springcoreadvanced2.pureproxy.proxy.code;
 import lombok.RequiredArgsConstructor;
 
 /**
- * {@link Subject}를 의존하는 Client
+ * {@link Subject}를 사용하는 Client
  */
 @RequiredArgsConstructor
 public class Client {
