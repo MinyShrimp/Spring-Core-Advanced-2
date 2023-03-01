@@ -715,6 +715,94 @@ public class ProxyPatternTest {
 
 ## 프록시 패턴 - 예제 코드 2
 
+### 프록시 패턴 적용
+
+![img_7.png](img_7.png)
+
+![img_8.png](img_8.png)
+
+### 예제
+
+#### CacheProxy
+
+```java
+/**
+ * 캐싱 프록시 객체
+ */
+@Slf4j
+public class CacheProxy implements Subject {
+
+    /**
+     * 목표: {@link Subject} 구현체
+     */
+    private final Subject target;
+
+    /**
+     * 캐시값
+     * - 초기값: null
+     */
+    private String cacheValue;
+
+    /**
+     * @param target 목표 Subject
+     */
+    public CacheProxy(Subject target) {
+        this.target = target;
+    }
+
+    /**
+     * 프록시 객체가 {@link #target}을 대신 호출해줌.<br>
+     * {@link #target}의 값을 Caching 한다.<br><br>
+     *
+     * <code>cacheValue == null: {@link #target}.operation()</code><br>
+     * <code>cacheValue != null: {@link #cacheValue}</code>
+     */
+    @Override
+    public String operation() {
+        log.info("프록시 호출");
+        if (cacheValue == null) {
+            cacheValue = target.operation();
+        }
+        return cacheValue;
+    }
+}
+```
+
+#### ProxyPatternTest
+
+```java
+/**
+ * {@link ProxyPatternClient}가 3번 호출되지만,
+ * {@link RealSubject}가 아닌 {@link CacheProxy}가 대신 호출됨.
+ * <p>
+ * {@link CacheProxy}는 최초 한 번 {@link RealSubject}을 호출하고,
+ * 그 이후에는 캐싱된 {@link RealSubject}의 결과값을 반환.
+ * <p>
+ * 결과적으로 총 [1 ~ 1.5초]의 시간이 소모된다.
+ */
+@Test
+void cacheProxyTest() {
+    RealSubject realSubject = new RealSubject();
+    CacheProxy cacheProxy = new CacheProxy(realSubject);
+    ProxyPatternClient client = new ProxyPatternClient(cacheProxy);
+
+    client.execute();
+    client.execute();
+    client.execute();
+}
+```
+
+### 테스트 결과
+
+```
+15:14:01.992 [main] CacheProxy - 프록시 호출
+15:14:01.995 [main] RealSubject - 실제 객체 호출
+15:14:03.000 [main] CacheProxy - 프록시 호출
+15:14:03.001 [main] CacheProxy - 프록시 호출
+
+총 [1009 ms] 소요 
+```
+
 ## 데코레이터 패턴 - 예제 코드 1
 
 ## 데코레이터 패턴 - 예제 코드 2
