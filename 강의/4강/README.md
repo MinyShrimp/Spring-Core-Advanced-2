@@ -265,6 +265,149 @@ public class ProxyApplication { ... }
 
 ## 예제 프로젝트 만들기 V2
 
+### v2: 인터페이스 없는 구체 클래스 - 스프링 빈으로 수동 등록
+
+#### OrderRepository V2
+
+```java
+/**
+ * v2<br>
+ * 인터페이스 없는 구체 클래스 - 스프링 빈 수동 등록<br><br>
+ * 주문 저장소
+ */
+@Slf4j
+public class OrderRepositoryV2 {
+
+    /**
+     * 주문 저장 로직
+     *
+     * @param itemId 상품 ID
+     * @throws IllegalStateException itemId.equals("ex")
+     */
+    public void save(String itemId) {
+        if (itemId.equals("ex")) {
+            throw new IllegalStateException("예외 발생!");
+        }
+        sleep(1000);
+    }
+
+    /**
+     * {@link Thread#sleep}, {@link InterruptedException} Wrapper
+     *
+     * @param millis 중지할 시간
+     */
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            log.info("", e);
+        }
+    }
+}
+```
+
+#### OrderService V2
+
+```java
+/**
+ * v2<br>
+ * 인터페이스 없는 구체 클래스 - 스프링 빈 수동 등록<br><br>
+ * 주문 서비스
+ */
+@RequiredArgsConstructor
+public class OrderServiceV2 {
+    private final OrderRepositoryV2 orderRepository;
+
+    /**
+     * 주문 저장 비즈니스 로직
+     *
+     * @param itemId 상품 ID
+     * @throws IllegalStateException itemId.equals("ex")
+     */
+    public void orderItem(String itemId) {
+        orderRepository.save(itemId);
+    }
+}
+```
+
+#### OrderController V2
+
+```java
+/**
+ * v2<br>
+ * 인터페이스 없는 구체 클래스 - 스프링 빈 수동 등록<br><br>
+ * 주문 컨트롤러
+ */
+@RestController
+@RequestMapping("/v2")
+@RequiredArgsConstructor
+public class OrderControllerV2 {
+    private final OrderServiceV2 orderService;
+
+    /**
+     * GET /v2/request
+     *
+     * @param itemId 상품 ID
+     * @return ECHO 상품 ID
+     * @throws IllegalStateException itemId.equals("ex")
+     */
+    @GetMapping("/request")
+    public String request(String itemId) {
+        orderService.orderItem(itemId);
+        return itemId;
+    }
+
+    /**
+     * GET /v2/no-log
+     *
+     * @return "noLog ok"
+     */
+    @GetMapping("no-log")
+    public String noLog() {
+        return "noLog ok";
+    }
+}
+```
+
+#### AppV2Config
+
+```java
+/**
+ * v2<br>
+ * 인터페이스 없는 구체 클래스 - 스프링 빈 수동 등록<br><br>
+ * 스프링 빈 수동 등록 설정
+ */
+@Configuration
+public class AppV2Config {
+
+    @Bean
+    public OrderControllerV2 orderController() {
+        return new OrderControllerV2(orderService());
+    }
+
+    @Bean
+    public OrderServiceV2 orderService() {
+        return new OrderServiceV2(orderRepository());
+    }
+
+    @Bean
+    public OrderRepositoryV2 orderRepository() {
+        return new OrderRepositoryV2();
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({AppV1Config.class, AppV2Config.class})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication { ... }
+```
+
+* `@Import({AppV1Config.class, AppV2Config.class})`
+    * 두 개 이상의 설정 파일을 등록하기 위해선 배열로 설정하면 된다.
+
 ## 예제 프로젝트 만들기 V3
 
 ## 요구사항 추가
