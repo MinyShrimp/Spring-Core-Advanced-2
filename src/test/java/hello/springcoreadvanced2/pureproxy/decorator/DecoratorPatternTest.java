@@ -32,7 +32,7 @@ public class DecoratorPatternTest {
     @Test
     void decorator1() {
         Component realComponent = new RealComponent();
-        Component decorator = new MessageDecorator(realComponent);
+        Decorator decorator = new MessageDecorator(realComponent);
         Client client = new Client(decorator);
 
         client.execute();
@@ -46,8 +46,8 @@ public class DecoratorPatternTest {
     @Test
     void decorator2() {
         Component realComponent = new RealComponent();
-        Component messageDecorator = new MessageDecorator(realComponent);
-        Component timeDecorator = new TimeDecorator(messageDecorator);
+        Decorator messageDecorator = new MessageDecorator(realComponent);
+        Decorator timeDecorator = new TimeDecorator(messageDecorator);
         Client client = new Client(timeDecorator);
 
         client.execute();
