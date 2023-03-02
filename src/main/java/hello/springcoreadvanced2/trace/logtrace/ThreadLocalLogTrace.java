@@ -34,6 +34,11 @@ public class ThreadLocalLogTrace implements LogTrace {
         complete(status, e);
     }
 
+    @Override
+    public boolean isFirstLevel() {
+        return traceIdHolder.get() == null;
+    }
+
     /**
      * 현재 Trace 종료<br>
      * - {@link #end}, {@link #exception}에서 호출

@@ -33,6 +33,7 @@ public class LogTraceFilterHandler implements InvocationHandler {
             return method.invoke(target, args);
         }
 
+        // LogTrace 로직 실행
         TraceStatus status = null;
         try {
             String message = method.getDeclaringClass().getSimpleName() + "." + method.getName() + "()";

@@ -34,6 +34,11 @@ public class FieldLogTrace implements LogTrace {
         complete(status, e);
     }
 
+    @Override
+    public boolean isFirstLevel() {
+        return traceIdHolder.isFirstLevel();
+    }
+
     /**
      * 현재 Trace 종료<br>
      * - {@link #end}, {@link #exception}에서 호출

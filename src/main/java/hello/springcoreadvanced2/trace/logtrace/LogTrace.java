@@ -1,5 +1,6 @@
 package hello.springcoreadvanced2.trace.logtrace;
 
+import hello.springcoreadvanced2.trace.TraceId;
 import hello.springcoreadvanced2.trace.TraceStatus;
 
 /**
@@ -34,6 +35,11 @@ public interface LogTrace {
      * @param e      발생한 예외
      */
     void exception(TraceStatus status, Exception e);
+
+    /**
+     * @return {@link TraceId#isFirstLevel()}
+     */
+    boolean isFirstLevel();
 
     /**
      * Trace Level에 따라 공백 추가<br>
