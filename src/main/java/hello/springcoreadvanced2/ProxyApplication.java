@@ -1,24 +1,21 @@
 package hello.springcoreadvanced2;
 
 import hello.springcoreadvanced2.config.v1_proxy.ConcreteProxyConfig;
-import hello.springcoreadvanced2.config.v1_proxy.InterfaceProxyConfig;
-import hello.springcoreadvanced2.trace.logtrace.LogTrace;
-import hello.springcoreadvanced2.trace.logtrace.ThreadLocalLogTrace;
+import hello.springcoreadvanced2.config.v2_dynamicproxy.DynamicProxyBasicConfig;
+import hello.springcoreadvanced2.trace.logtrace.LogTraceConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-@Import({InterfaceProxyConfig.class, ConcreteProxyConfig.class})
+@Import({
+        LogTraceConfig.class,
+        DynamicProxyBasicConfig.class,
+        ConcreteProxyConfig.class
+})
 @SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
 public class ProxyApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ProxyApplication.class, args);
-    }
-
-    @Bean
-    public LogTrace logTrace() {
-        return new ThreadLocalLogTrace();
     }
 }

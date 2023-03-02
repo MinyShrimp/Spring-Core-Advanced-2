@@ -382,6 +382,142 @@ JDK 동적 프록시 기술 덕분에 적용 대상 만큼 프록시 객체를 �
 
 ## JDK 동적 프록시 - 적용 1
 
+### 예제
+
+#### LogTraceBasicHandler
+
+```java
+/**
+ * JDK 동적 프록시 사용<br>
+ * - {@link InvocationHandler} JDK 동적 프록시에 로직을 적용하기 위한 Handler
+ * - 이 핸들러는 {@link LogTrace}를 사용하기 위한 프록시 핸들러이다.
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class LogTraceBasicHandler implements InvocationHandler {
+    private final Object target;
+    private final LogTrace logTrace;
+
+    /**
+     * @param proxy  프록시 자신, 여기서는 {@link #target}과 같다. - {@link OrderControllerV1Impl}
+     * @param method 인터페이스의 메서드, 여기서는 {@link OrderControllerV1#request}이다.
+     * @param args   메서드를 호출할 때 전달할 인수
+     */
+    @Override
+    public Object invoke(
+            Object proxy,
+            Method method,
+            Object[] args
+    ) throws Throwable {
+
+        TraceStatus status = null;
+
+        try {
+
+            /**
+             * {@link Method#getClass()}           {@link Method}
+             * {@link Method#getDeclaringClass()}  원본 {@link Class}, {@link OrderControllerV1}
+             * {@link Class#getSimpleName()}       클래스의 이름, OrderControllerV1
+             * {@link Method#getName()}            메서드의 이름, request
+             */
+            String message = method.getDeclaringClass().getSimpleName() + "." + method.getName() + "()";
+            status = logTrace.begin(message);
+
+            /**
+             * {@link Method#invoke(Object, Object...)}
+             * @param Object    실행을 원하는 인스턴스, {@link #target}
+             * @param Object... 해당 메서드를 실행하기 위해 필요한 파라미터, args
+             */
+            Object result = method.invoke(target, args);
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### DynamicProxyBasicConfig
+
+```java
+/**
+ * JDK 동적 프록시를 스프링 빈으로 등록하는 설정 클래스
+ */
+@Configuration
+public class DynamicProxyBasicConfig {
+
+    /**
+     * @return {@link OrderControllerV1}의 JDK 동적 {@link Proxy}
+     */
+    @Bean
+    public OrderControllerV1 orderControllerV1(LogTrace logTrace) {
+
+        /**
+         * {@link Proxy#newProxyInstance(ClassLoader, Class[], InvocationHandler)}<br>
+         * JDK 동적 프록시 생성
+         * @param ClassLoader       ".class" 파일을 찾아주는 역할<br>
+         * @param Class[]           구현을 원하는 Interface<br>
+         * @param InvocationHandler 실제 구현 로직 Handler<br>
+         */
+        return (OrderControllerV1) Proxy.newProxyInstance(
+                OrderControllerV1.class.getClassLoader(),
+                new Class[]{OrderControllerV1.class},
+                new LogTraceBasicHandler(
+                        new OrderControllerV1Impl(orderServiceV1(logTrace)),
+                        logTrace
+                )
+        );
+    }
+
+    /**
+     * @return {@link OrderServiceV1}의 JDK 동적 {@link Proxy}
+     */
+    @Bean
+    public OrderServiceV1 orderServiceV1(LogTrace logTrace) {
+        return (OrderServiceV1) Proxy.newProxyInstance(
+                OrderServiceV1.class.getClassLoader(),
+                new Class[]{OrderServiceV1.class},
+                new LogTraceBasicHandler(
+                        new OrderServiceV1Impl(orderRepositoryV1(logTrace)),
+                        logTrace
+                )
+        );
+    }
+
+    /**
+     * @return {@link OrderRepositoryV1}의 JDK 동적 {@link Proxy}
+     */
+    @Bean
+    public OrderRepositoryV1 orderRepositoryV1(LogTrace logTrace) {
+        return (OrderRepositoryV1) Proxy.newProxyInstance(
+                OrderRepositoryV1.class.getClassLoader(),
+                new Class[]{OrderRepositoryV1.class},
+                new LogTraceBasicHandler(new OrderRepositoryV1Impl(), logTrace)
+        );
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({
+        LogTraceConfig.class,
+        DynamicProxyBasicConfig.class,
+        ConcreteProxyConfig.class
+})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ProxyApplication.class, args);
+    }
+}
+```
+
 ## JDK 동적 프록시 - 적용 2
 
 ## CGLIB - 소개

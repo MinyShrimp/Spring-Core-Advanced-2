@@ -4,7 +4,8 @@ import hello.springcoreadvanced2.trace.TraceStatus;
 
 /**
  * 로그 Trace Interface<br>
- * - {@link FieldLogTrace}, {@link ThreadLocalLogTrace}
+ * - 구현체: {@link FieldLogTrace}, {@link ThreadLocalLogTrace}
+ * - 스프링 빈으로 등록되어있다. {@link LogTraceConfig}
  */
 public interface LogTrace {
     String START_PREFIX = "-->";
