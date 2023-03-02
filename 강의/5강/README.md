@@ -526,6 +526,136 @@ public class ProxyApplication {
 
 ## JDK 동적 프록시 - 적용 2
 
+### 목표
+
+필터를 추가해보자.
+
+### 예제
+
+#### LogTraceFilterHandler
+
+```java
+/**
+ * JDK 동적 프록시 사용<br>
+ * - {@link InvocationHandler} JDK 동적 프록시에 로직을 적용하기 위한 Handler<br>
+ * - {@link PatternMatchUtils#simpleMatch}로 WhiteList 기반 URL 패턴 필터링
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class LogTraceFilterHandler implements InvocationHandler {
+    private final Object target;
+    private final LogTrace logTrace;
+    private final String[] patterns;
+
+    @Override
+    public Object invoke(
+            Object proxy,
+            Method method,
+            Object[] args
+    ) throws Throwable {
+
+        // patterns 에 해당 메서드 이름이 없다면,
+        if (!PatternMatchUtils.simpleMatch(patterns, method.getName())) {
+            return method.invoke(target, args);
+        }
+
+        TraceStatus status = null;
+        try {
+            String message = method.getDeclaringClass().getSimpleName() + "." + method.getName() + "()";
+            status = logTrace.begin(message);
+
+            Object result = method.invoke(target, args);
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### DynamicProxyFilterConfig
+
+```java
+/**
+ * JDK 동적 프록시를 스프링 빈으로 등록하는 설정 클래스<br>
+ * - {@link LogTraceFilterHandler} 적용
+ */
+@Configuration
+public class DynamicProxyFilterConfig {
+
+    /**
+     * 적용할 URL Whitelist 목록<br>
+     * - {@link PatternMatchUtils#simpleMatch} 사용
+     */
+    private static final String[] PATTERNS = {
+            "request*", "order*", "save*"
+    };
+
+    /**
+     * @return {@link OrderControllerV1}의 JDK 동적 {@link Proxy}
+     */
+    @Bean
+    public OrderControllerV1 orderControllerV1(LogTrace logTrace) {
+
+        return (OrderControllerV1) Proxy.newProxyInstance(
+                OrderControllerV1.class.getClassLoader(),
+                new Class[]{OrderControllerV1.class},
+                new LogTraceFilterHandler(
+                        new OrderControllerV1Impl(orderServiceV1(logTrace)),
+                        logTrace, PATTERNS
+                )
+        );
+    }
+
+    /**
+     * @return {@link OrderServiceV1}의 JDK 동적 {@link Proxy}
+     */
+    @Bean
+    public OrderServiceV1 orderServiceV1(LogTrace logTrace) {
+        return (OrderServiceV1) Proxy.newProxyInstance(
+                OrderServiceV1.class.getClassLoader(),
+                new Class[]{OrderServiceV1.class},
+                new LogTraceFilterHandler(
+                        new OrderServiceV1Impl(orderRepositoryV1(logTrace)),
+                        logTrace, PATTERNS
+                )
+        );
+    }
+
+    /**
+     * @return {@link OrderRepositoryV1}의 JDK 동적 {@link Proxy}
+     */
+    @Bean
+    public OrderRepositoryV1 orderRepositoryV1(LogTrace logTrace) {
+        return (OrderRepositoryV1) Proxy.newProxyInstance(
+                OrderRepositoryV1.class.getClassLoader(),
+                new Class[]{OrderRepositoryV1.class},
+                new LogTraceFilterHandler(new OrderRepositoryV1Impl(), logTrace, PATTERNS)
+        );
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({
+        LogTraceConfig.class,
+        DynamicProxyFilterConfig.class,
+        ConcreteProxyConfig.class
+})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ProxyApplication.class, args);
+    }
+}
+```
+
 ## CGLIB - 소개
 
 ## CGLIB - 예제 코드
