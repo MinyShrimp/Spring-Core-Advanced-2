@@ -518,6 +518,12 @@ public class ProxyApplication {
 }
 ```
 
+### 그림으로 정리
+
+![img_5.png](img_5.png)
+
+![img_6.png](img_6.png)
+
 ## JDK 동적 프록시 - 적용 2
 
 ## CGLIB - 소개
