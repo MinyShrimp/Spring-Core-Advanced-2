@@ -254,6 +254,141 @@ public class BeanPostProcessorTest {
 
 ## 빈 후처리기 - 적용
 
+### V3 적용
+
+![img_4.png](img_4.png)
+
+빈 후처리기를 사용해서 실제 객체 대신 프록시를 스프링 빈으로 등록해보자.
+이렇게 하면 수동으로 등록하는 빈은 물론이고, 컴포넌트 스캔을 사용하는 빈까지 모두 프록시를 적용할 수 있다.
+
+더 나아가서 설정 파일에 있는 수 많은 프록시 생성 코드도 한번에 제거할 수 있다.
+
+### 예제 코드
+
+#### PackageLogTraceProxyPostProcessor
+
+```java
+/**
+ * 빈 후처리기를 사용해서 프록시를 등록
+ *
+ * @see BeanPostProcessor
+ * @see BeanPostProcessor#postProcessAfterInitialization(Object, String)
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class PackageLogTraceProxyPostProcessor implements BeanPostProcessor {
+
+    private final String basePackage;
+    private final Advisor advisor;
+
+    /**
+     * 빈 생성 -> @PostConstruct -> postProcessAfterInitialization
+     *
+     * @return 프록시 생성
+     */
+    @Override
+    public Object postProcessAfterInitialization(
+            Object bean,
+            String beanName
+    ) throws BeansException {
+        log.info("[       param] beanName = {} bean = {}", beanName, bean);
+
+        String packageName = bean.getClass().getPackageName();
+        if (!packageName.startsWith(basePackage)) {
+            return bean;
+        }
+
+        ProxyFactory proxyFactory = new ProxyFactory(bean);
+        proxyFactory.addAdvisor(advisor);
+
+        Object proxy = proxyFactory.getProxy();
+        log.info("[create proxy] target = {} proxy = {}", bean.getClass(), proxy.getClass());
+
+        return proxy;
+    }
+}
+```
+
+#### BeanPostProcessorConfig
+
+```java
+@Slf4j
+@Configuration
+@Import({AppV1Config.class, AppV2Config.class})
+public class BeanPostProcessorConfig {
+
+    /**
+     * 빈 후처리기 등록
+     */
+    @Bean
+    public PackageLogTraceProxyPostProcessor logTraceProxyPostProcessor(
+            LogTrace logTrace
+    ) {
+        return new PackageLogTraceProxyPostProcessor(
+                "hello.springcoreadvanced2.app",
+                getAdvisor(logTrace)
+        );
+    }
+
+    private Advisor getAdvisor(
+            LogTrace logTrace
+    ) {
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.setMappedNames("request*", "order*", "save*");
+
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({
+        LogTraceConfig.class,
+        BeanPostProcessorConfig.class
+})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication { ... }
+```
+
+### 결과 로그
+
+```
+# V3: CGLIB
+[       param] beanName = orderRepositoryV3 bean = hello.springcoreadvanced2.app.v3.OrderRepositoryV3@35cd68d4
+[create proxy] target = class hello.springcoreadvanced2.app.v3.OrderRepositoryV3 proxy = class hello.springcoreadvanced2.app.v3.OrderRepositoryV3$$SpringCGLIB$$0
+[       param] beanName = orderServiceV3 bean = hello.springcoreadvanced2.app.v3.OrderServiceV3@7fd8c559
+[create proxy] target = class hello.springcoreadvanced2.app.v3.OrderServiceV3 proxy = class hello.springcoreadvanced2.app.v3.OrderServiceV3$$SpringCGLIB$$0
+[       param] beanName = orderControllerV3 bean = hello.springcoreadvanced2.app.v3.OrderControllerV3@18acfe88
+[create proxy] target = class hello.springcoreadvanced2.app.v3.OrderControllerV3 proxy = class hello.springcoreadvanced2.app.v3.OrderControllerV3$$SpringCGLIB$$0
+
+# V1: JDK 동적 프록시
+[       param] beanName = orderRepositoryV1 bean = hello.springcoreadvanced2.app.v1.OrderRepositoryV1Impl@10bea4
+[create proxy] target = class hello.springcoreadvanced2.app.v1.OrderRepositoryV1Impl proxy = class jdk.proxy2.$Proxy54
+[       param] beanName = orderServiceV1 bean = hello.springcoreadvanced2.app.v1.OrderServiceV1Impl@64f1fd08
+[create proxy] target = class hello.springcoreadvanced2.app.v1.OrderServiceV1Impl proxy = class jdk.proxy2.$Proxy55
+[       param] beanName = orderControllerV1 bean = hello.springcoreadvanced2.app.v1.OrderControllerV1Impl@55e2fe3c
+[create proxy] target = class hello.springcoreadvanced2.app.v1.OrderControllerV1Impl proxy = class jdk.proxy2.$Proxy56
+
+# V2: CGLIB
+[       param] beanName = orderRepositoryV2 bean = hello.springcoreadvanced2.app.v2.OrderRepositoryV2@2e807c54
+[create proxy] target = class hello.springcoreadvanced2.app.v2.OrderRepositoryV2 proxy = class hello.springcoreadvanced2.app.v2.OrderRepositoryV2$$SpringCGLIB$$0
+[       param] beanName = orderServiceV2 bean = hello.springcoreadvanced2.app.v2.OrderServiceV2@2b8bd798
+[create proxy] target = class hello.springcoreadvanced2.app.v2.OrderServiceV2 proxy = class hello.springcoreadvanced2.app.v2.OrderServiceV2$$SpringCGLIB$$0
+[       param] beanName = orderControllerV2 bean = hello.springcoreadvanced2.app.v2.OrderControllerV2@692e028d
+[create proxy] target = class hello.springcoreadvanced2.app.v2.OrderControllerV2 proxy = class hello.springcoreadvanced2.app.v2.OrderControllerV2$$SpringCGLIB$$0
+```
+
+#### 컴포넌트 스캔에도 적용
+
+여기서는 생략했지만, 실행해보면 스프링 부트가 기본으로 등록하는 수 많은 빈들이 빈 후처리기를 통과하는 것을 확인할 수 있다.
+여기에 모두 프록시를 적용하는 것은 올바르지 않다. 꼭 필요한 곳에만 프록시를 적용해야 한다.
+
+여기서는 `basePackage`를 사용해서 `v1 ~ v3` 애플리케이션 관련 빈들만 프록시 적용 대상이 되도록 했다.
+
 ## 빈 후처리기 - 정리
 
 ## 스프링이 제공하는 빈 후처리기 1
