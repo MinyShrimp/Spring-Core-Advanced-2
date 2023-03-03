@@ -49,6 +49,112 @@
 
 ## 프록시 팩토리 - 예제 코드 1
 
+### Advice 만들기
+
+`Advice`는 프록시에 적용하는 부가 기능 로직이다.
+
+이것은 JDK 동적 프록시가 제공하는 `InvocationHandler`와 CGLIB가 제공하는 `MethodInterceptor`의 개념과 유사한다.
+둘을 개념적으로 추상화 한 것이다. 프록시 팩토리를 사용하면 둘 대신에 `Advice` 를 사용하면 된다.
+
+Advice 를 만드는 방법은 여러가지가 있지만, 기본적인 방법은 다음 인터페이스를 구현하면 된다.
+
+#### MethodInterceptor Interface
+
+```java
+package org.aopalliance.intercept;
+
+public interface MethodInterceptor extends Interceptor {
+    Object invoke(MethodInvocation invocation) throws Throwable;
+}
+```
+
+* `MethodInvocation`
+    * 내부에는 다음 메서드를 호출하는 방법, 현재 프록시 객체 인스턴스, `args`, 메서드 정보 등이 포함되어 있다.
+    * 기존에 파라미터로 제공되는 부분들이 이 안으로 모두 들어갔다고 생각하면 된다.
+* `MethodInterceptor`는 `Interceptor`를 상속하고 `Interceptor`는 `Advice` 인터페이스를 상속한다.
+
+### 예제
+
+#### TimeAdvice
+
+```java
+/**
+ * 스프링이 제공하는 {@link MethodInterceptor}을 사용해서 프록시를 생성<br>
+ * - 타겟이 없다 -> {@link MethodInvocation}에 들어있다.<br>
+ * - {@link MethodInvocation#proceed()}로 프록시를 호출하여 결과값을 받아온다.
+ */
+@Slf4j
+public class TimeAdvice implements MethodInterceptor {
+
+    @Override
+    public Object invoke(
+            MethodInvocation invocation
+    ) throws Throwable {
+
+        log.info("TimeProxy 실행");
+        long startTime = System.currentTimeMillis();
+
+        Object result = invocation.proceed();
+
+        long endTime = System.currentTimeMillis();
+        long resultTime = endTime - startTime;
+        log.info("TimeProxy 종료 resultTime = [{}ms]", resultTime);
+
+        return result;
+    }
+}
+```
+
+#### ProxyFactoryTest
+
+```java
+/**
+ * {@link ProxyFactory} Test
+ */
+@Slf4j
+public class ProxyFactoryTest {
+
+    /**
+     * {@link ProxyFactory} - JDK 동적 프록시 생성 테스트
+     * <p>
+     * 1. 프록시 팩토리 생성자에 타겟을 주입한다.<br>
+     * 2. {@link ProxyFactory#addAdvice}에 프록시({@link MethodInterceptor})를 주입한다.
+     * 3. {@link ProxyFactory#getProxy}로 프록시를 꺼내온다.
+     * 4. {}
+     */
+    @Test
+    @DisplayName("인터페이스가 있으면 JDK 동적 프록시 사용")
+    public void interfaceProxy() {
+        ServiceInterface target = new ServiceImpl();
+
+        // 프록시 팩토리를 생성할 때 생성자에 타겟을 주입한다.
+        ProxyFactory proxyFactory = new ProxyFactory(target);
+        // addAdvice 메서드를 통해 어드바이스(프록시)를 주입한다.
+        // "add" 이다. 이 말은 곧 여러 프록시를 등록할 수 있다는 뜻이다.
+        proxyFactory.addAdvice(new TimeAdvice());
+
+        // getProxy 메서드를 통해 프록시 팩토리의 프록시를 꺼내온다.
+        ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+        // class hello.springcoreadvanced2.common.service.ServiceImpl
+        log.info("targetClass = {}", target.getClass());
+        // class jdk.proxy2.$Proxy9
+        // 타겟이 Interface 이므로, JDK 동적 프록시를 사용한다.
+        log.info("proxyClass = {}", proxy.getClass());
+
+        // 프록시 호출
+        proxy.save();
+
+        // AopProxy 가 맞는지
+        assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+        // JDK 동적 프록시가 맞는지
+        assertThat(AopUtils.isJdkDynamicProxy(proxy)).isTrue();
+        // CGLIB 프록시가 아닌지
+        assertThat(AopUtils.isCglibProxy(proxy)).isFalse();
+    }
+}
+```
+
 ## 프록시 팩토리 - 예제 코드 2
 
 ## 포인트 컷, 어드바이스, 어드바이저 - 소개
