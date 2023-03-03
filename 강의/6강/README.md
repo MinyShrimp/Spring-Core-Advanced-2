@@ -675,7 +675,7 @@ void multiAdvisorTest2() {
 정리하면 하나의 target 에 여러 AOP가 동시에 적용되어도, 스프링의 AOP는 target 마다 하나의 프록시만 생성한다.
 이부분을 꼭 기억해두자.
 
-## 프록시 팩토리 - 적용 1
+## 프록시 팩토리 - 적용 1 - V1
 
 ### 예제
 
@@ -814,4 +814,102 @@ ProxyFactory proxy = class jdk.proxy2.$Proxy57, target = class hello.springcorea
 [d1705acb] OrderControllerV1.request() time = [1004ms]
 ```
 
-## 프록시 팩토리 - 적용 2
+## 프록시 팩토리 - 적용 2 - V2
+
+### 예제
+
+#### ProxyFactoryConfig V2
+
+```java
+/**
+ * {@link ProxyFactory}를 이용하여 프록시를 생성하는 설정 파일
+ */
+@Slf4j
+@Configuration
+public class ProxyFactoryConfigV2 {
+
+    /**
+     * {@link NameMatchMethodPointcut}, {@link LogTraceAdvice}를 이용한 Advisor 생성
+     *
+     * @return {@link DefaultPointcutAdvisor}
+     */
+    private Advisor getAdvisor(LogTrace logTrace) {
+        // pointcut
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.setMappedNames("request*", "order*", "save*");
+
+        // advice
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+
+        // advisor
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+
+    /**
+     * {@link ProxyFactory}를 사용하여 프록시 생성
+     *
+     * @param target app.v2.*
+     * @return CGLIB 프록시
+     */
+    private Object getProxy(Object target, LogTrace logTrace) {
+        // 프록시 팩토리 생성
+        ProxyFactory factory = new ProxyFactory(target);
+        factory.addAdvisor(getAdvisor(logTrace));
+
+        // 프록시 획득
+        Object proxy = factory.getProxy();
+        log.info("ProxyFactory proxy = {}, target = {}", proxy.getClass(), target.getClass());
+
+        return proxy;
+    }
+
+    @Bean
+    public OrderControllerV2 orderControllerV2(LogTrace logTrace) {
+        OrderControllerV2 target = new OrderControllerV2(orderServiceV2(logTrace));
+        return (OrderControllerV2) getProxy(target, logTrace);
+    }
+
+    @Bean
+    public OrderServiceV2 orderServiceV2(LogTrace logTrace) {
+        OrderServiceV2 target = new OrderServiceV2(orderRepositoryV2(logTrace));
+        return (OrderServiceV2) getProxy(target, logTrace);
+    }
+
+    @Bean
+    public OrderRepositoryV2 orderRepositoryV2(LogTrace logTrace) {
+        OrderRepositoryV2 target = new OrderRepositoryV2();
+        return (OrderRepositoryV2) getProxy(target, logTrace);
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({
+        LogTraceConfig.class,
+        ProxyFactoryConfigV1.class,
+        ProxyFactoryConfigV2.class
+})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication { ... }
+```
+
+### 실행 로그
+
+```
+ProxyFactory proxy = class hello.springcoreadvanced2.app.v2.OrderRepositoryV2$$SpringCGLIB$$0, target = class hello.springcoreadvanced2.app.v2.OrderRepositoryV2
+ProxyFactory proxy = class hello.springcoreadvanced2.app.v2.OrderServiceV2$$SpringCGLIB$$0, target = class hello.springcoreadvanced2.app.v2.OrderServiceV2
+ProxyFactory proxy = class hello.springcoreadvanced2.app.v2.OrderControllerV2$$SpringCGLIB$$0, target = class hello.springcoreadvanced2.app.v2.OrderControllerV2
+```
+
+* http://localhost:8080/v2/request?itemId=hello
+
+```
+[b76fd90f] OrderControllerV2.request()
+[b76fd90f] |-->OrderServiceV2.orderItem()
+[b76fd90f] |   |-->OrderRepositoryV2.save()
+[b76fd90f] |   |<--OrderRepositoryV2.save() time = [1005ms]
+[b76fd90f] |<--OrderServiceV2.orderItem() time = [1006ms]
+[b76fd90f] OrderControllerV2.request() time = [1007ms]
+```
