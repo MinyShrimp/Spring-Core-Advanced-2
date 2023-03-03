@@ -563,6 +563,118 @@ void advisorTest3() {
 
 ## 예제 코드 4 - 여러 어드바이저 함께 적용
 
+* 어드바이저는 하나의 포인트컷과 하나의 어드바이스를 가지고 있다.
+* 만약 여러 어드바이저를 하나의 `target`에 적용하려면 어떻게 해야할까?
+* 쉽게 이야기해서 하나의 `target`에 여러 어드바이스를 적용하려면 어떻게 해야할까?
+
+### Client -> Proxy(Advisor) * N -> Target
+
+![img_5.png](img_5.png)
+
+#### MultiAdvisorTest
+
+```java
+public class MultiAdvisorTest {
+
+    /**
+     * Client -> ( Proxy 2 -> Advisor ) -> ( Proxy 1 -> Advisor ) -> Target
+     */
+    @Test
+    @DisplayName("프록시 체이닝 - 여러 프록시, 여러 어드바이저")
+    void multiAdvisorTest1() {
+        // 타겟 생성
+        ServiceInterface target = new ServiceImpl();
+
+        // 프록시 1 생성 -> 타겟
+        ProxyFactory proxyFactory1 = new ProxyFactory(target);
+        proxyFactory1.addAdvice(new Advice1());
+
+        ServiceInterface proxy1 = (ServiceInterface) proxyFactory1.getProxy();
+
+        // 프록시 2 생성 -> 프록시 1
+        ProxyFactory proxyFactory2 = new ProxyFactory(proxy1);
+        proxyFactory2.addAdvice(new Advice2());
+
+        ServiceInterface proxy2 = (ServiceInterface) proxyFactory2.getProxy();
+
+        // 프록시 2 호출
+        proxy2.save();
+        proxy2.find();
+    }
+    
+    @Slf4j
+    static class Advice1 implements MethodInterceptor {
+        @Override
+        public Object invoke(MethodInvocation invocation) throws Throwable {
+            log.info("advice 1 호출");
+            return invocation.proceed();
+        }
+    }
+
+    @Slf4j
+    static class Advice2 implements MethodInterceptor {
+        @Override
+        public Object invoke(MethodInvocation invocation) throws Throwable {
+            log.info("advice 2 호출");
+            return invocation.proceed();
+        }
+    }
+}
+```
+
+### Client -> Proxy(Advisor * N) -> Target
+
+![img_6.png](img_6.png)
+
+![img_7.png](img_7.png)
+
+#### MultiAdvisorTest
+
+```java
+/**
+ * Client -> ( Proxy -> Advisor 2 -> Advisor 1 ) -> Target
+ *
+ * @see ProxyFactory#addAdvisor(Advisor)
+ */
+@Test
+@DisplayName("프록시 체이닝 - 하나의 프록시, 여러 어드바이저")
+void multiAdvisorTest2() {
+    // 타겟 생성
+    ServiceInterface target = new ServiceImpl();
+
+    // 여러 어드바이저 생성
+    DefaultPointcutAdvisor advisor1 = new DefaultPointcutAdvisor(Pointcut.TRUE, new Advice1());
+    DefaultPointcutAdvisor advisor2 = new DefaultPointcutAdvisor(Pointcut.TRUE, new Advice2());
+
+    // 프록시 생성 -> 어드바이저 2 -> 어드바이저 1 -> 타겟
+    ProxyFactory proxyFactory = new ProxyFactory(target);
+    proxyFactory.addAdvisor(advisor2);
+    proxyFactory.addAdvisor(advisor1);
+
+    // 프록시 획득
+    ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+    // 프록시 호출
+    proxy.save();
+    proxy.find();
+}
+```
+
+### 정리
+
+결과적으로 여러 프록시를 사용할 때와 비교해서 결과는 같고, 성능은 더 좋다.
+
+### 중요
+
+사실 이번 장을 이렇게 풀어서 설명한 이유가 있다.
+스프링의 AOP를 처음 공부하거나 사용하면, AOP 적용 수 만큼 프록시가 생성된다고 착각하게 된다.
+실제 많은 실무 개발자들도 이렇게 생각하는 것을 보았다.
+
+스프링은 AOP를 적용할 때, 최적화를 진행해서 지금처럼 프록시는 하나만 만들고, 하나의 프록시에 여러 어드바이저를 적용한다.
+
+정리하면 하나의 target 에 여러 AOP가 동시에 적용되어도, 스프링의 AOP는 target 마다 하나의 프록시만 생성한다.
+이부분을 꼭 기억해두자.
+
 ## 프록시 팩토리 - 적용 1
 
 ## 프록시 팩토리 - 적용 2
