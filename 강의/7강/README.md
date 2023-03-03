@@ -705,3 +705,10 @@ public class AutoProxyConfig {
     * 프록시 1개 생성, 프록시에 `advisor1`, `advisor2` 모두 포함
 * `advisor1`, `advisor2`의 포인트컷을 모두 만족하지 않음
     * 프록시가 생성되지 않음
+
+## 정리
+
+### AnnotationAwareAspectJAutoProxyCreator
+
+자동 프록시 생성기인 `AnnotationAwareAspectJAutoProxyCreator` 덕분에 개발자는 매우 편리하게 프록시를 적용할 수 있다.
+이제 `Advisor`만 스프링 빈으로 등록하면 된다.
