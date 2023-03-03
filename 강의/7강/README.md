@@ -565,4 +565,121 @@ public class ProxyApplication { ... }
 
 ## 스프링이 제공하는 빈 후처리기 2
 
+### 애플리케이션 로딩 로그
+
+```
+# order*
+[6af6eae3] AppV1Config.orderControllerV1()
+[6af6eae3] |-->AppV1Config.orderServiceV1()
+[6af6eae3] |   |-->AppV1Config.orderRepositoryV1()
+[6af6eae3] |   |<--AppV1Config.orderRepositoryV1() time = [0ms]
+[6af6eae3] |<--AppV1Config.orderServiceV1() time = [1ms]
+[6af6eae3] AppV1Config.orderControllerV1() time = [4ms]
+[444db25a] AppV2Config.orderControllerV2()
+[444db25a] |-->AppV2Config.orderServiceV2()
+[444db25a] |   |-->AppV2Config.orderRepositoryV2()
+[444db25a] |   |<--AppV2Config.orderRepositoryV2() time = [0ms]
+[444db25a] |<--AppV2Config.orderServiceV2() time = [2ms]
+[444db25a] AppV2Config.orderControllerV2() time = [3ms]
+
+# request*
+[ad228373] EnableWebMvcConfiguration.requestMappingHandlerAdapter()
+[ad228373] EnableWebMvcConfiguration.requestMappingHandlerAdapter() time = [31ms]
+[d50998a6] WebMvcConfigurationSupport.requestMappingHandlerMapping()
+[d50998a6] WebMvcConfigurationSupport.requestMappingHandlerMapping() time = [2ms]
+```
+
+애플리케이션 서버를 실행해보면, 스프링이 초기화 되면서 기대하지 않은 이러한 로그들이 올라온다.
+그 이유는 지금 사용한 포인트컷이 단순히 메서드 이름에 `"request*", "order*", "save*"` 만 포함되어 있으면 매칭 된다고 판단하기 때문이다.
+
+결국 스프링이 내부에서 사용하는 빈에도 메서드 이름에 `request`라는 단어만 들어가 있으면 프록시가 만들어지고 되고, 어드바이스도 적용되는 것이다.
+
+### AspectJExpressionPointcut
+
+`AspectJ`라는 AOP에 특화된 **포인트컷 표현식**을 적용할 수 있다.
+
+`AspectJ` 포인트컷 표현식과 AOP는 조금 뒤에 자세히 설명하겠다.
+지금은 특별한 표현식으로 복잡한 포인트컷을 만들 수 있구나 라고 대략 이해하면 된다.
+
+### 적용
+
+#### AutoProxyConfig - advisor2
+
+```java
+@Configuration
+@Import({AppV1Config.class, AppV2Config.class})
+public class AutoProxyConfig {
+
+    /**
+     * {@link NameMatchMethodPointcut} Pointcut 사용
+     */
+    public Advisor advisor1(LogTrace logTrace) { ... }
+
+    /**
+     * {@link AspectJExpressionPointcut} Pointcut 사용
+     */
+    @Bean
+    public Advisor advisor2(LogTrace logTrace) {
+        final String aspectJString = "execution(* hello.springcoreadvanced2.app..*(..))";
+
+        AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
+        pointcut.setExpression(aspectJString);
+
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+}
+```
+
+* `AspectJExpressionPointcut`
+    * AspectJ 포인트컷 표현식을 적용할 수 있다.
+* `execution(* hello.proxy.app..*(..))`
+    * AspectJ가 제공하는 포인트컷 표현식이다.
+    * `execution([TYPE] [PACKAGE][METHOD][PARAM])`
+    * `*`: 모든 반환 타입
+    * `hello.proxy.app..`: 해당 패키지와 그 하위 패키지
+    * `*(..)`: `*` 모든 메서드 이름, `(..)` 파라미터는 상관 없음
+
+#### AutoProxyConfig - advisor3
+
+```java
+@Configuration
+@Import({AppV1Config.class, AppV2Config.class})
+public class AutoProxyConfig {
+
+    /**
+     * {@link NameMatchMethodPointcut} Pointcut 사용
+     */
+    public Advisor advisor1(LogTrace logTrace) { ... }
+
+    /**
+     * {@link AspectJExpressionPointcut} Pointcut 사용
+     */
+    public Advisor advisor2(LogTrace logTrace) { ... }
+
+    /**
+     * {@link AspectJExpressionPointcut} Pointcut 사용
+     */
+    @Bean
+    public Advisor advisor3(LogTrace logTrace) {
+        final String aspectJString = """
+                    execution(* hello.springcoreadvanced2.app..*(..)) &&
+                    !execution(* hello.springcoreadvanced2.app..noLog(..))
+                """;
+
+        AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
+        pointcut.setExpression(aspectJString);
+
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+}
+```
+
+* `execution(* hello.proxy.app..*(..)) && !execution(* hello.proxy.app..noLog(..))`
+    * `&&`: 두 조건을 모두 만족해야함
+    * `!`: 반대
+
 ## 하나의 프록시, 여러 Advisor 적용
