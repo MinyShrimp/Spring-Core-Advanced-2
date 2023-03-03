@@ -63,7 +63,7 @@
 * 하나의 프록시, 여러 Advisor 적용
 * 정리
 
-## @Aspect AOP
+## [@Aspect AOP](강의/8강)
 
 * @Aspect 프록시 - 적용
 * @Aspect 프록시 - 설명
