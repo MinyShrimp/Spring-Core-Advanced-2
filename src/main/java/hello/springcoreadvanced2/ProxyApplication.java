@@ -1,6 +1,6 @@
 package hello.springcoreadvanced2;
 
-import hello.springcoreadvanced2.config.v4_postprocessor.BeanPostProcessorConfig;
+import hello.springcoreadvanced2.config.v5_autoproxy.AutoProxyConfig;
 import hello.springcoreadvanced2.trace.logtrace.LogTraceConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Import;
 
 @Import({
         LogTraceConfig.class,
-        BeanPostProcessorConfig.class
+        AutoProxyConfig.class
 })
 @SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
 public class ProxyApplication {
