@@ -157,6 +157,91 @@ public class ProxyFactoryTest {
 
 ## 프록시 팩토리 - 예제 코드 2
 
+### 예제 1 - 구체 클래스는 CGLIB
+
+```java
+/**
+ * {@link ProxyFactory} - CGLIB 프록시 생성 테스트
+ * <p>
+ * 1. 생성자에 타겟을 주입하는 것은 동일하다.
+ * 2. 핸들러를 주입하는 것도 동일하다.
+ * 3. 프록시를 꺼내오는 것도 동일하다.
+ */
+@Test
+@DisplayName("구체 클래스만 있으면 CGLIB 사용")
+public void concreteProxy() {
+    ConcreteService target = new ConcreteService();
+
+    // 프록시 팩토리를 생성할 때 생성자에 타겟을 주입한다.
+    ProxyFactory proxyFactory = new ProxyFactory(target);
+    proxyFactory.addAdvice(new TimeAdvice());
+
+    // getProxy 메서드를 통해 프록시 팩토리의 프록시를 꺼내온다.
+    ConcreteService proxy = (ConcreteService) proxyFactory.getProxy();
+
+    // class hello.springcoreadvanced2.common.service.ServiceImpl
+    log.info("targetClass = {}", target.getClass());
+    // class hello.springcoreadvanced2.common.service.ConcreteService$$SpringCGLIB$$0
+    // 타겟이 구체 클래스 이므로, CGLIB 프록시를 사용한다.
+    log.info("proxyClass = {}", proxy.getClass());
+
+    // 프록시 호출
+    proxy.call();
+
+    // AopProxy 가 맞는지
+    assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+    // JDK 동적 프록시가 아닌지
+    assertThat(AopUtils.isJdkDynamicProxy(proxy)).isFalse();
+    // CGLIB 프록시가 맞는지
+    assertThat(AopUtils.isCglibProxy(proxy)).isTrue();
+}
+```
+
+### 예제 2
+
+```java
+/**
+ * {@link ProxyFactory#setProxyTargetClass}에 true를 주면 무조건 CGLIB를 사용한다.
+ */
+@Test
+@DisplayName("ProxyTargetClass 옵션을 사용하면 인터페이스가 있어도 CGLIB를 사용")
+public void proxyTargetProxy() {
+    ServiceInterface target = new ServiceImpl();
+
+    ProxyFactory proxyFactory = new ProxyFactory(target);
+    proxyFactory.addAdvice(new TimeAdvice());
+    
+    // 이 옵션을 주면 인터페이스의 여부와는 상관없이 CGLIB를 사용하여 프록시를 생성한다.
+    proxyFactory.setProxyTargetClass(true);
+
+    ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+    // class hello.springcoreadvanced2.common.service.ServiceImpl
+    log.info("targetClass = {}", target.getClass());
+    // class hello.springcoreadvanced2.common.service.ServiceImpl$$SpringCGLIB$$0
+    log.info("proxyClass = {}", proxy.getClass());
+
+    proxy.save();
+
+    assertThat(AopUtils.isAopProxy(proxy)).isTrue();
+    assertThat(AopUtils.isJdkDynamicProxy(proxy)).isFalse();
+    assertThat(AopUtils.isCglibProxy(proxy)).isTrue();
+}
+```
+
+### 정리
+
+* 프록시 팩토리의 서비스 추상화 덕분에 구체적인 CGLIB, JDK 동적 프록시 기술에 의존하지 않고, 매우 편리하게 동적 프록시를 생성할 수 있다.
+
+* **프록시의 부가 기능 로직도 특정 기술에 종속적이지 않게** `Advice` 하나로 편리하게 사용할 수 있었다.
+    * 이것은 프록시 팩토리가 내부에서 JDK 동적 프록시인 경우 `InvocationHandler`가 `Advice`를 호출하도록 개발해두고,
+      CGLIB인 경우 `MethodInterceptor`가 `Advice`를 호출하도록 기능을 개발해두었기 때문이다.
+
+> **참고**<br>
+> 스프링 부트는 AOP를 적용할 때 기본적으로 `proxyTargetClass = true`로 설정해서 사용한다.
+> 따라서 인터페이스가 있어도 항상 CGLIB를 사용해서 구체 클래스를 기반으로 프록시를 생성한다.
+> 자세한 이유는 강의 뒷 부분에서 설명한다.
+
 ## 포인트 컷, 어드바이스, 어드바이저 - 소개
 
 ## 예제 코드 1 - 어드바이저
