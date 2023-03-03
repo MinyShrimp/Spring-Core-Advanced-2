@@ -677,4 +677,141 @@ void multiAdvisorTest2() {
 
 ## 프록시 팩토리 - 적용 1
 
+### 예제
+
+#### ProxyFactoryConfig V1
+
+```java
+/**
+ * {@link ProxyFactory}를 이용하여 프록시를 생성하는 설정 파일
+ */
+@Slf4j
+@Configuration
+public class ProxyFactoryConfigV1 {
+
+    /**
+     * {@link NameMatchMethodPointcut}, {@link LogTraceAdvice}를 이용한 Advisor 생성
+     *
+     * @return {@link DefaultPointcutAdvisor}
+     */
+    private Advisor getAdvisor(LogTrace logTrace) {
+        // pointcut
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.setMappedNames("request*", "order*", "save*");
+
+        // advice
+        LogTraceAdvice advice = new LogTraceAdvice(logTrace);
+
+        // advisor
+        return new DefaultPointcutAdvisor(pointcut, advice);
+    }
+
+    /**
+     * {@link ProxyFactory}를 사용하여 프록시 생성
+     *
+     * @param target app.v1.*
+     * @return JDK 동적 프록시
+     */
+    private Object getProxy(Object target, LogTrace logTrace) {
+        // 프록시 팩토리 생성
+        ProxyFactory factory = new ProxyFactory(target);
+        factory.addAdvisor(getAdvisor(logTrace));
+
+        // 프록시 획득
+        Object proxy = factory.getProxy();
+        log.info("ProxyFactory proxy = {}, target = {}", proxy.getClass(), target.getClass());
+
+        return proxy;
+    }
+
+    @Bean
+    public OrderControllerV1 orderControllerV1(LogTrace logTrace) {
+        OrderControllerV1 target = new OrderControllerV1Impl(orderServiceV1(logTrace));
+        return (OrderControllerV1) getProxy(target, logTrace);
+    }
+
+    @Bean
+    public OrderServiceV1 orderServiceV1(LogTrace logTrace) {
+        OrderServiceV1 target = new OrderServiceV1Impl(orderRepositoryV1(logTrace));
+        return (OrderServiceV1) getProxy(target, logTrace);
+    }
+
+    @Bean
+    public OrderRepositoryV1 orderRepositoryV1(LogTrace logTrace) {
+        OrderRepositoryV1 target = new OrderRepositoryV1Impl();
+        return (OrderRepositoryV1) getProxy(target, logTrace);
+    }
+}
+```
+
+#### LogTraceAdvice
+
+```java
+/**
+ * LogTrace Advice
+ *
+ * @see Advice
+ * @see MethodInterceptor
+ * @see LogTrace
+ */
+@Slf4j
+@RequiredArgsConstructor
+public class LogTraceAdvice implements MethodInterceptor {
+
+    private final LogTrace logTrace;
+
+    @Override
+    public Object invoke(
+            MethodInvocation invocation
+    ) throws Throwable {
+        TraceStatus status = null;
+
+        try {
+            Method method = invocation.getMethod();
+            String message = method.getDeclaringClass().getSimpleName() + "." + method.getName() + "()";
+            status = logTrace.begin(message);
+
+            Object result = invocation.proceed();
+
+            logTrace.end(status);
+            return result;
+        } catch (Exception e) {
+            logTrace.exception(status, e);
+            throw e;
+        }
+    }
+}
+```
+
+#### MainApplication
+
+```java
+@Import({
+        LogTraceConfig.class,
+        ProxyFactoryConfigV1.class,
+        ConcreteProxyConfig.class
+})
+@SpringBootApplication(scanBasePackages = "hello.springcoreadvanced2.app.v3")
+public class ProxyApplication { ... }
+```
+
+### 실행 로그
+
+```
+ProxyFactory proxy = class jdk.proxy2.$Proxy54, target = class hello.springcoreadvanced2.app.v1.OrderRepositoryV1Impl
+ProxyFactory proxy = class jdk.proxy2.$Proxy56, target = class hello.springcoreadvanced2.app.v1.OrderServiceV1Impl
+ProxyFactory proxy = class jdk.proxy2.$Proxy57, target = class hello.springcoreadvanced2.app.v1.OrderControllerV1Impl
+```
+
+* http://localhost:8080/v1/request?itemId=hello
+
+```
+[d1705acb] OrderControllerV1.request()
+[d1705acb] |-->OrderServiceV1.orderItem()
+[d1705acb] |   |-->OrderRepositoryV1.save()
+[d1705acb] |   |<--OrderRepositoryV1.save() time = [1003ms]
+[d1705acb] |<--OrderServiceV1.orderItem() time = [1003ms]
+[d1705acb] OrderControllerV1.request() time = [1004ms]
+```
+
 ## 프록시 팩토리 - 적용 2
