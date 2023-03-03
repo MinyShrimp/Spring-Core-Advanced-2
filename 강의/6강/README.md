@@ -264,6 +264,8 @@ public void proxyTargetProxy() {
 
 ### 정리
 
+![img_2.png](img_2.png)
+
 #### 쉽게 기억하기
 
 * 조언(`Advice`)을 어디(`Pointcut`)에 할 것인가?
@@ -286,6 +288,50 @@ public void proxyTargetProxy() {
 > 그림은 이해를 돕기 위한 것이고, 실제 구현은 약간 다를 수 있다.
 
 ## 예제 코드 1 - 어드바이저
+
+### 예제
+
+#### AdvisorTest
+
+```java
+/**
+ * {@link Advisor} Test
+ */
+public class AdvisorTest {
+
+    /**
+     * {@link Advisor} Test<br>
+     * - {@link Pointcut#TRUE}:                    항상 True를 반환하는 포인트 컷<br>
+     * - {@link DefaultPointcutAdvisor}:           {@link Advisor}의 일반적인 구현체<br>
+     * - {@link ProxyFactory#addAdvisor(Advisor)}: 프록시 팩토리에 어드바이저 추가<br>
+     * - {@link ProxyFactory#addAdvice(Advice)}:   내부에서 {@link Pointcut#TRUE}인 어드바이저를 생성
+     *
+     * @see Pointcut#TRUE
+     * @see DefaultPointcutAdvisor
+     * @see ProxyFactory#addAdvice(Advice)
+     * @see ProxyFactory#addAdvisor(Advisor)
+     */
+    @Test
+    void advisorTest1() {
+        ServiceInterface target = new ServiceImpl();
+
+        // 프록시 팩토리 생성
+        ProxyFactory proxyFactory = new ProxyFactory(target);
+
+        // 어드바이저 생성
+        DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor(Pointcut.TRUE, new TimeAdvice());
+
+        // 어드바이저 추가
+        proxyFactory.addAdvisor(advisor);
+
+        // 프록시 획득
+        ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+        proxy.save();
+        proxy.find();
+    }
+}
+```
 
 ## 예제 코드 2 - 직접 만든 포인트 컷
 
