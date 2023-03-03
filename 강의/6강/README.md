@@ -493,6 +493,74 @@ void advisorTest2() {
 
 ## 예제 코드 3 - 스프링이 제공하는 포인트 컷
 
+### NameMatchMethodPointcut
+
+```java
+package org.springframework.aop.support;
+
+public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut implements Serializable { ... }
+```
+
+### 예제
+
+#### NameMatchMethodPointcut Test
+
+```java
+/**
+ * {@link NameMatchMethodPointcut} Test
+ *
+ * @see NameMatchMethodPointcut#setMappedName(String)
+ */
+@Test
+@DisplayName("스프링이 제공하는 포인트컷")
+void advisorTest3() {
+    ServiceInterface target = new ServiceImpl();
+
+    // 프록시 팩토리 생성
+    ProxyFactory proxyFactory = new ProxyFactory(target);
+
+    // 메서드 이름을 기반으로 필터링하는 포인트컷
+    NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+    pointcut.setMappedName("save");
+
+    // 어드바이저 생성
+    DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor(pointcut, new TimeAdvice());
+
+    // 어드바이저 추가
+    proxyFactory.addAdvisor(advisor);
+
+    // 프록시 획득
+    ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+    proxy.save();
+    proxy.find();
+}
+```
+
+### 그 외
+
+* `NameMatchMethodPointcut`
+    * 메서드 이름을 기반으로 매칭한다. 내부에서는 `PatternMatchUtils` 를 사용한다.
+    * 예) *xxx* 허용
+* `JdkRegexpMethodPointcut`
+    * JDK 정규 표현식을 기반으로 포인트컷을 매칭한다.
+* `TruePointcut`
+    * 항상 참을 반환한다.
+* `AnnotationMatchingPointcut`
+    * 애노테이션으로 매칭한다.
+* `AspectJExpressionPointcut`
+    * `aspectJ` 표현식으로 매칭한다.
+
+#### 가장 중요한 것은 aspectJ 표현식
+
+여기에서 사실 다른 것은 중요하지 않다.
+
+실무에서는 사용하기도 편리하고 기능도 가장 많은 `aspectJ` 표현식을 기반으로
+사용하는 `AspectJExpressionPointcut`을 사용하게 된다.
+
+`aspectJ` 표현식과 사용 방법은 중요해서 이후 AOP를 설명할 때 자세히 설명하겠다.
+지금은 `Pointcut`의 동작 방식과 전체 구조에 집중하자.
+
 ## 예제 코드 4 - 여러 어드바이저 함께 적용
 
 ## 프록시 팩토리 - 적용 1
