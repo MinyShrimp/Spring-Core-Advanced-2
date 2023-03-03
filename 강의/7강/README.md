@@ -46,6 +46,54 @@
 
 ## 빈 후처리기 - 예제 코드 1
 
+### 일반적인 빈 등록
+
+![img.png](img.png)
+
+#### BasicTest
+
+```java
+public class BasicTest {
+    @Test
+    void basicConfig() {
+        ApplicationContext context = new AnnotationConfigApplicationContext(BasicConfig.class);
+
+        // A는 Bean으로 등록된다.
+        A a = context.getBean("beanA", A.class);
+        a.helloA();
+
+        // B는 Bean으로 등록되지 않는다.
+        Assertions.assertThrows(
+                NoSuchBeanDefinitionException.class,
+                () -> context.getBean(B.class)
+        );
+    }
+
+    @Slf4j
+    @Configuration
+    static class BasicConfig {
+        @Bean(name = "beanA")
+        public A a() {
+            return new A();
+        }
+    }
+
+    @Slf4j
+    static class A {
+        public void helloA() {
+            log.info("hello A");
+        }
+    }
+
+    @Slf4j
+    static class B {
+        public void helloB() {
+            log.info("hello B");
+        }
+    }
+}
+```
+
 ## 빈 후처리기 - 예제 코드 2
 
 ## 빈 후처리기 - 적용
