@@ -335,6 +335,162 @@ public class AdvisorTest {
 
 ## 예제 코드 2 - 직접 만든 포인트 컷
 
+### 포인트컷 관련 인터페이스 - 스프링 제공
+
+```java
+// 클래스 + 메서드 조건 필터
+// 둘다 True를 반환해야 Advice로 이동된다.
+public interface Pointcut {
+    ClassFilter getClassFilter();
+    MethodMatcher getMethodMatcher();
+}
+
+// 클래스 조건 필터
+public interface ClassFilter {
+    boolean matches(Class<?> clazz);
+}
+
+// 메서드 조건 필터
+public interface MethodMatcher {
+    boolean matches(Method method, Class<?> targetClass);
+    //..
+}
+```
+
+### 직접 만든 포인트 컷
+
+#### MyMethodFilter
+
+```java
+/**
+ * 메서드 이름을 기반으로 검증
+ * - method.getName().equals("save")
+ *
+ * @see MethodMatcher
+ */
+@Slf4j
+static class MyMethodMatcher implements MethodMatcher {
+    private final String matchName = "save";
+
+    /**
+     * {@link MethodMatcher#isRuntime()} is false
+     *
+     * @param method      Reflection Method
+     * @param targetClass 목표 오리지널 인스턴스
+     * @return method.getName().equals(" save ")
+     */
+    @Override
+    public boolean matches(Method method, Class<?> targetClass) {
+        boolean result = method.getName().equals(matchName);
+        log.info("포인트 컷 호출 method = {}, targetClass = {}", method.getName(), targetClass);
+        log.info("포인트 컷 결과 result = {}", result);
+        return result;
+    }
+
+    /**
+     * true: None Caching <br>
+     * -> {@link MethodMatcher#matches(Method, Class, Object...)}<br>
+     * false: Caching <br>
+     * -> {@link MethodMatcher#matches(Method, Class)}
+     *
+     * @return false
+     */
+    @Override
+    public boolean isRuntime() {
+        return false;
+    }
+
+    /**
+     * {@link MethodMatcher#isRuntime()} is true
+     *
+     * @param method      Reflection Method
+     * @param targetClass 목표 오리지널 인스턴스
+     * @param args        동적으로 넘어오는 파라미터
+     * @return false
+     */
+    @Override
+    public boolean matches(Method method, Class<?> targetClass, Object... args) {
+        return false;
+    }
+}
+```
+
+#### MyPointcut
+
+```java
+/**
+ * 포인트 컷 직접 구현
+ *
+ * @see Pointcut
+ * @see ClassFilter
+ * @see MethodMatcher
+ */
+static class MyPointcut implements Pointcut {
+
+    /**
+     * 클래스 필터
+     *
+     * @return {@link ClassFilter#TRUE} 클래스 필터는 항상 통과한다.
+     */
+    @Override
+    public ClassFilter getClassFilter() {
+        return ClassFilter.TRUE;
+    }
+
+    /**
+     * 메서드 필터
+     *
+     * @return {@link MyMethodMatcher}
+     */
+    @Override
+    public MethodMatcher getMethodMatcher() {
+        return new MyMethodMatcher();
+    }
+}
+```
+
+#### AdvisorTest
+
+```java
+/**
+ * {@link MyPointcut} Test
+ */
+@Test
+@DisplayName("직접 만든 포인트 컷")
+void advisorTest2() {
+    ServiceInterface target = new ServiceImpl();
+
+    // 프록시 팩토리 생성
+    ProxyFactory proxyFactory = new ProxyFactory(target);
+
+    // 어드바이저 생성
+    DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor(new MyPointcut(), new TimeAdvice());
+
+    // 어드바이저 추가
+    proxyFactory.addAdvisor(advisor);
+
+    // 프록시 획득
+    ServiceInterface proxy = (ServiceInterface) proxyFactory.getProxy();
+
+    proxy.save();
+    proxy.find();
+}
+```
+
+### 그림으로 정리
+
+#### 포인트컷 적용
+
+![img_3.png](img_3.png)
+
+* Advice 가 적용된다.
+
+#### 포인트컷 미적용
+
+![img_4.png](img_4.png)
+
+* Advice 가 적용되지 않는다.
+
 ## 예제 코드 3 - 스프링이 제공하는 포인트 컷
 
 ## 예제 코드 4 - 여러 어드바이저 함께 적용
